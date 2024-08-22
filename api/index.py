@@ -6,11 +6,8 @@ secret_key = secrets.token_hex(16)
 app = Flask(__name__)
 app.secret_key = secret_key  # Necessary for session management
 import os
-from dotenv import load_dotenv
 
 api_key = os.getenv('GOOGLE_API_KEY')
-
-load_dotenv()
 
 
 # Initialize SQLite database
