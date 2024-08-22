@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Chatbot Interface</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #app-container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+        }
+        #sidebar {
+            width: 250px;
+            background-color: #f2f2f7;
+            padding: 10px;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            transition: width 0.3s ease, background-color 0.3s ease, border-right-color 0.3s ease;
+            overflow-y: auto;
+        }
+        #sidebar.collapsed {
+            width: 50px;
+        }
+        #sidebar-top {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        #sidebar-toggle {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px;
+            margin-right: 5px;
+            color: #007aff;
+        }
+
+        #sidebar.collapsed #sidebar-top {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #sidebar.collapsed #sidebar-toggle {
+            margin-right: 0;
+            margin-bottom: 5px;
+        }
+        #newConversationBtn {
+            background-color: #007aff;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+            flex-grow: 1;
+        }
+        #newConversationBtn span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #sidebar.collapsed #newConversationBtn {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            flex-grow: 0;
+        }
+        #sidebar.collapsed #newConversationBtn span {
+            display: none;
+        }
+        #sidebar.collapsed #newConversationBtn::before {
+            content: '+';
+            font-size: 20px;
+        }
+        #conversationList {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+        #conversationList li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            cursor: pointer;
+            border-bottom: 1px solid #e0e0e0;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #000000;
+            background-color: #ffffff;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        #conversationList li:hover {
+            background-color: #f0f0f0;
+        }
+        .conversation-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .delete-btn {
+            display: none;
+            background-color: #ff3b30;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #conversationList li:hover .delete-btn {
+            display: block;
+        }
+        .delete-btn:hover {
+            background-color: #d63030;
+        }
+        .conversation-name {
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .conversation-name:hover {
+            background-color: #e0e0e0;
+        }
+        .editing {
+            background-color: #ffffff;
+            border: 1px solid #007aff;
+            outline: none;
+        }
+        #chatbox {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #ffffff;
+            transition: background-color 0.3s ease;
+        }
+        #messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .message {
+            max-width: 80%;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        .message-content {
+            padding: 8px 12px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.4;
+            max-width: fit-content;
+            overflow-wrap: break-word;
+        }
+        .message-content p {
+            margin: 0 0 10px 0;
+        }
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+        .message-content pre {
+            background-color: #f4f4f4;
+            border-radius: 4px;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        .message-content code {
+            background-color: #f4f4f4;
+            border-radius: 2px;
+            padding: 2px 4px;
+            font-family: monospace;
+        }
+        .user {
+            align-self: flex-end;
+        }
+        .user .message-content {
+            background-color: #007aff;
+            color: #ffffff;
+            border-bottom-right-radius: 4px;
+        }
+        .bot {
+            align-self: flex-start;
+        }
+        .bot .message-content {
+            background-color: #e9e9eb;
+            color: #000000;
+            border-bottom-left-radius: 4px;
+        }
+        #input-container {
+            display: flex;
+            padding: 10px;
+            background-color: #ffffff;
+            border-top: 1px solid #e9e9eb;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        #userInput {
+            flex-grow: 1;
+            border: 1px solid #e9e9eb;
+            padding: 10px;
+            font-size: 16px;
+            outline: none;
+            border-radius: 20px;
+            background-color: #ffffff;
+            color: #000000;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+            margin-right: 10px;
+        }
+        #sendButton {
+            background-color: transparent;
+            color: #007aff;
+            border: none;
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: opacity 0.3s, color 0.3s ease;
+        }
+        #sendButton:hover {
+            opacity: 0.7;
+        }
+
+        /* Add these new styles for the theme switch button */
+        #themeSwitchBtn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+        }
+
+        /* Dark theme styles */
+        body.dark-theme {
+            background-color: #1c1c1e;
+            color: #ffffff;
+        }
+
+        .dark-theme #sidebar {
+            background-color: #1c1c1e;
+            border-right-color: #3a3a3c;
+        }
+
+        .dark-theme #newConversationBtn {
+            background-color: #0a84ff;
+        }
+
+        .dark-theme #conversationList li {
+            color: #ffffff;
+            background-color: #2c2c2e;
+            border-bottom-color: #3a3a3c;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .dark-theme #conversationList li:hover {
+            background-color: #3a3a3c;
+        }
+
+        .dark-theme .conversation-name:hover {
+            background-color: #3a3a3c;
+        }
+
+        .dark-theme .editing {
+            background-color: #3a3a3c;
+            border-color: #0a84ff;
+            color: #ffffff;
+        }
+
+        .dark-theme #chatbox {
+            background-color: #1c1c1e;
+        }
+
+        .dark-theme .user .message-content {
+            background-color: #5f5f5f;
+            color: #ffffff;
+        }
+
+        .dark-theme .bot .message-content {
+            background-color: #cacaca;
+            color: #000000;
+        }
+
+        .dark-theme #input-container {
+            background-color: #1c1c1e;
+            border-top-color: #3a3a3c;
+        }
+
+        .dark-theme #userInput {
+            background-color: #2c2c2e;
+            color: #ffffff;
+            border-color: #3a3a3c;
+        }
+
+        .dark-theme #sendButton {
+            color: #0a84ff;
+        }
+
+        .dark-theme .message-content pre,
+        .dark-theme .message-content code {
+            background-color: #2c2c2e;
+        }
+
+        .copy-btn {
+            background-color: transparent;
+            border: none;
+            color: #007aff;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 5px;
+            margin-top: 5px;
+            align-self: flex-end;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .message:hover .copy-btn {
+            opacity: 1;
+        }
+
+        .dark-theme .copy-btn {
+            color: #0a84ff;
+        }
+
+        .user .copy-btn {
+            color: #ffffff;
+        }
+
+        .dark-theme .user .copy-btn {
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <button id="themeSwitchBtn" onclick="toggleTheme()">🌓</button>
+    <div id="app-container">
+        <div id="sidebar">
+            <div id="sidebar-top">
+                <button id="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+                <button id="newConversationBtn"><span>New Conversation</span></button>
+            </div>
+            <ul id="conversationList"></ul>
+        </div>
+        <div id="chatbox">
+            <div id="messages"></div>
+            <div id="input-container">
+                <input type="text" id="userInput" placeholder="Type your message here...">
+                <button id="sendButton" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentConversationId = null;
+        const conversations = {};
+
+        function createNewConversation() {
+            return new Promise((resolve, reject) => {
+                fetch('/new_conversation', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        currentConversationId = data.conversation_id;
+                        conversations[currentConversationId] = {
+                            name: `Chat ${Object.keys(conversations).length + 1}`,
+                            messages: []
+                        };
+                        updateConversationList();
+                        clearMessages();
+                        resolve();
+                    })
+                    .catch(reject);
+            });
+        }
+
+        function updateConversationList() {
+            const list = document.getElementById('conversationList');
+            list.innerHTML = '';
+            Object.keys(conversations).forEach(id => {
+                const li = document.createElement('li');
+                const name = conversations[id].name || `Conversation ${id.substr(0, 8)}...`;
+                li.innerHTML = `
+                    <span class="conversation-name" onclick="loadConversation('${id}')" ondblclick="renameConversation('${id}')">${name}</span>
+                    <button class="delete-btn" onclick="deleteConversation('${id}')">&times;</button>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function deleteConversation(id) {
+            delete conversations[id];
+            if (currentConversationId === id) {
+                currentConversationId = null;
+                clearMessages();
+            }
+            updateConversationList();
+        }
+
+        function loadConversation(id) {
+            currentConversationId = id;
+            clearMessages();
+            fetch('/get_conversation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ conversation_id: id })
+            })
+            .then(response => response.json())
+            .then(data => {
+                data.history.forEach(message => {
+                    const [sender, content] = message.split(': ', 2);
+                    displayMessage(content, sender.toLowerCase());
+                });
+            });
+        }
+
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '';
+        }
+
+        function displayMessage(content, sender) {
+            const messagesDiv = document.getElementById('messages');
+            const messageClass = sender === 'user' ? 'user' : 'bot';
+            
+            const parsedContent = marked.parse(content);
+            
+            const messageHtml = `
+                <div class="message ${messageClass}">
+                    <div class="message-content">${parsedContent}</div>
+                    <button class="copy-btn" onclick="copyMessage(this)">Copy</button>
+                </div>`;
+            
+            messagesDiv.innerHTML += messageHtml;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function sendMessage() {
+            var userInput = document.getElementById("userInput").value;
+            if (userInput.trim() === "") return;
+
+            if (!currentConversationId) {
+                createNewConversation().then(() => {
+                    sendMessageToServer(userInput);
+                });
+            } else {
+                sendMessageToServer(userInput);
+            }
+        }
+
+        function sendMessageToServer(userInput) {
+            displayMessage(userInput, 'user');
+            document.getElementById("userInput").value = "";
+
+            // Update conversation name if it's the first message
+            if (conversations[currentConversationId].messages.length === 0) {
+                conversations[currentConversationId].name = userInput.length > 30 
+                    ? userInput.substring(0, 30) + '...' 
+                    : userInput;
+                updateConversationList();
+            }
+
+            fetch('/ask', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: userInput, conversation_id: currentConversationId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayMessage(data.response, 'bot');
+                conversations[currentConversationId].messages.push({ content: userInput, sender: 'user' });
+                conversations[currentConversationId].messages.push({ content: data.response, sender: 'bot' });
+            });
+        }
+
+        function renameConversation(id) {
+            const span = event.target;
+            const oldName = span.textContent;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = oldName;
+            input.className = 'editing';
+            input.onblur = function() {
+                finishRenaming(id, this, oldName);
+            };
+            input.onkeydown = function(e) {
+                if (e.key === 'Enter') {
+                    finishRenaming(id, this, oldName);
+                }
+            };
+            span.parentNode.replaceChild(input, span);
+            input.focus();
+        }
+
+        function finishRenaming(id, input, oldName) {
+            const newName = input.value.trim();
+            const span = document.createElement('span');
+            span.className = 'conversation-name';
+            span.onclick = () => loadConversation(id);
+            span.ondblclick = () => renameConversation(id);
+            
+            if (newName && newName !== oldName) {
+                span.textContent = newName;
+                conversations[id].name = newName;
+            } else {
+                span.textContent = oldName;
+            }
+            
+            input.parentNode.replaceChild(span, input);
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            updateThemeIcon();
+        }
+
+        function updateThemeIcon() {
+            const themeBtn = document.getElementById('themeSwitchBtn');
+            themeBtn.textContent = document.body.classList.contains('dark-theme') ? '☀️' : '🌓';
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        function copyMessage(button) {
+            const messageContent = button.previousElementSibling.textContent;
+            navigator.clipboard.writeText(messageContent).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+
+        document.getElementById("userInput").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        });
+
+        document.getElementById("newConversationBtn").addEventListener("click", createNewConversation);
+
+        // Initialize with a new conversation
+        createNewConversation();
+        updateThemeIcon(); // Initialize the theme icon
+    </script>
+</body>
+</html>
